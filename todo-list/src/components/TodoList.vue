@@ -5,9 +5,9 @@
     <button @click="addTodo" class="rounded-button">Add Todo</button>
     <ul>
       <li v-for="(todo, index) in todos" :key="index" class="rounded-todo">
-        <input type="checkbox" v-model="todo.completed" @change="toggleCompleted(index)">
-        <span v-if="!todo.editing" :class="{ 'completed': todo.completed }">{{ todo.description }}</span>
-        <label>{{ todo.title }}</label>
+        <input type="checkbox" v-model="todo.complete" @change="toggleCompleted(index)">
+        <span v-if="!todo.editing" :class="{ 'completed': todo.complete }">{{ todo.description }}</span>
+        <label>{{ todo.label }}</label>
         <button @click="removeTodo(index)">Remove</button>
       </li>
     </ul>
@@ -33,7 +33,7 @@ export default {
         if (response.ok) {
           const data = await response.json();
           this.currentUser = data.clientPrincipal;
-          if (this.currentUser && this.currentUser.roles.includes('can_save')) {
+          if (this.currentUser && this.currentUser.userRoles.includes('can_save')) {
             await this.loadTodos();
           }
         } else {
@@ -44,29 +44,20 @@ export default {
       }
     },
     async loadTodos() {
-      try {
-        const response = await fetch('/api/todos', {
-          headers: {
-            Authorization: `Bearer ${this.currentUser.identityProviderAccessToken}`
-          }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          this.todos = data.todos;
-        } else {
-          console.error('Failed to load todos');
-        }
-      } catch (error) {
-        console.error('Error loading todos:', error);
-      }
+      //call list function
+      const todos = await this.list();
+      this.todos = todos;
+
     },
     async addTodo() {
       if (this.newTodo.trim() !== '') {
         const todo = {
-          description: this.newTodo,
-          completed: false
+          complete: false,
+          label: this.newTodo,
+          id: Math.random().toString(36).substr(2, 9),
         };
-        if (this.currentUser && this.currentUser.roles.includes('can_save')) {
+        console.log(this.currentUser);
+        if (this.currentUser && this.currentUser.userRoles.includes('can_save')) {
           todo.userId = this.currentUser.userId;
           await this.saveTodo(todo);
         } else {
@@ -76,65 +67,31 @@ export default {
       }
     },
     async saveTodo(todo) {
-      try {
-        const response = await fetch('/api/todos', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.currentUser.identityProviderAccessToken}`
-          },
-          body: JSON.stringify(todo)
-        });
-        if (!response.ok) {
-          console.error('Failed to save todo');
-        }
-      } catch (error) {
-        console.error('Error saving todo:', error);
-      }
+      //make call to create function
+      const newTodo = await this.create(todo);
+      this.todos.push(newTodo);
     },
     removeTodo(index) {
       const todo = this.todos[index];
-      if (todo._id) {
+      if (this.currentUser && this.currentUser.userRoles.includes('can_save')) {
         this.deleteTodoFromServer(todo);
       }
       this.todos.splice(index, 1);
     },
     async deleteTodoFromServer(todo) {
-      try {
-        const response = await fetch(`/api/todos/${todo._id}`, {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${this.currentUser.identityProviderAccessToken}`
-          }
-        });
-        if (!response.ok) {
-          console.error('Failed to delete todo from server');
-        }
-      } catch (error) {
-        console.error('Error deleting todo from server:', error);
-      }
+      //make call to delete todo
+      await this.delete(todo.id);
     },
     toggleCompleted(index) {
-      if (this.todos[index]._id) {
+      if (this.currentUser && this.currentUser.userRoles.includes('can_save')) {
         this.updateTodoOnServer(this.todos[index]);
       }
     },
     async updateTodoOnServer(todo) {
-      try {
-        const response = await fetch(`/api/todos/${todo._id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.currentUser.identityProviderAccessToken}`
-          },
-          body: JSON.stringify({ completed: todo.completed })
-        });
-        if (!response.ok) {
-          console.error('Failed to update todo on server');
-        }
-      } catch (error) {
-        console.error('Error updating todo on server:', error);
-      }
+      //make call to update todo
+      console.log(todo);
+      const updatedTodo = await this.update(todo.id, todo);
+      console.log(updatedTodo);
     },
     editTodo(index) {
       this.todos.forEach((todo, i) => {
@@ -154,7 +111,143 @@ export default {
           this.updateTodoOnServer(this.todos[index]);
         }
       }
+    },
+    async list() {
+      const query = `
+        query GetTodoItems {
+          todoItems {
+            items {
+              id
+              userId
+              label
+              complete
+            }
+          }
+        }`;
+          
+      const endpoint = "/data-api/graphql";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: query })
+      });
+      
+      const result = await response.json();
+      return result.data.todoItems.items;
+    },
+    async get(id) {
+      const gql = `
+        query GetTodoItem($id: ID!) {
+          todoItems_by_pk(id: $id) {
+            id
+            userId
+            label
+            complete
+          }
+        }`;
+
+      const query = {
+        query: gql,
+        variables: {
+          id: id,
+        },
+      };
+
+      const endpoint = "/data-api/graphql";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(query),
+      });
+
+      const result = await response.json();
+      console.table(result.data.todoItems_by_pk);
+    },
+    async update(id, newData) {
+      const gql = `
+        mutation UpdateTodoItem($id: ID!, $_partitionKeyValue: String!, $item: UpdateTodoItemsInput!) {
+          updateTodoItems(id: $id, _partitionKeyValue: $_partitionKeyValue, item: $item) {
+            id
+            userId
+            label
+            complete
+          }
+        }`;
+
+      const query = {
+        query: gql,
+        variables: {
+          id: id,
+          _partitionKeyValue: id,
+          item: newData
+        }
+      };
+
+      const endpoint = "/data-api/graphql";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(query)
+      });
+
+      const result = await response.json();
+      return result.data.updateTodoItems;
+    },
+    async create(data) {
+      const gql = `
+        mutation CreateTodoItem($item: CreateTodoItemsInput!) {
+          createTodoItems(item: $item) {
+            id
+            userId
+            label
+            complete
+          }
+        }`;
+
+      const query = {
+        query: gql,
+        variables: {
+          item: data
+        }
+      };
+
+      const endpoint = "/data-api/graphql";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(query)
+      });
+
+      const result = await response.json();
+      return result.data.createTodoItems;
+    },
+    async delete(id) {
+      const gql = `
+        mutation DeleteTodoItem($id: ID!, $_partitionKeyValue: String!) {
+          deleteTodoItems(id: $id, _partitionKeyValue: $_partitionKeyValue) {
+            id
+          }
+        }`;
+
+      const query = {
+        query: gql,
+        variables: {
+          id: id,
+          _partitionKeyValue: id
+        }
+      };
+
+      const endpoint = "/data-api/graphql";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(query)
+      });
+
+      const result = await response.json();
+      return result.data.deleteTodoItems;
     }
+
   }
 };
 </script>
