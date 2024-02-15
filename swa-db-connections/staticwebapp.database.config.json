@@ -13,7 +13,7 @@
     "graphql": {
       "enabled": true,
       "path": "/graphql",
-      "allow-introspection": true
+      "allow-introspection": false
     },
     "host": {
       "cors": {
@@ -23,7 +23,7 @@
       "authentication": {
         "provider": "StaticWebApps"
       },
-      "mode": "development"
+      "mode": "production"
     }
   },
   "entities": {
