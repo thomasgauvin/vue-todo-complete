@@ -7,19 +7,16 @@
       </div>
       <button @click="addTodo" class="add-button">+</button>
     </div>
-    
-    <ul>
-      <li v-for="(todo, index) in todos" :key="index">
-        <div class="todo-item">
-          <div class="toto-content">
-            <input type="checkbox" v-model="todo.completed" @change="toggleCompleted(index)">
-            <span v-if="!todo.editing" :class="{ 'completed': todo.completed }">{{ todo.description }}</span>
-            <label>{{ todo.title }}</label>
-          </div>
-          <button @click="removeTodo(index)" class="delete-button">X</button>
-        </div>
-      </li>
-    </ul>
+
+    <div class="todo-item" v-for="(todo, index) in todos" :key="index">
+      <div class="todo-content">
+        <input type="checkbox" v-model="todo.completed" @change="toggleCompleted(index)">
+        <span v-if="!todo.editing" :class="{ 'completed': todo.completed }">{{ todo.description }}</span>
+        <label>{{ todo.title }}</label>
+      </div>
+      <button @click="removeTodo(index)" class="delete-button">X</button>
+    </div>
+
   </div>
 </template>
 
@@ -196,6 +193,7 @@ export default {
   align-items: center;
   background-color: green;
   color: white;
+  font-size: 20px;
   text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
   border: none;
   border-radius: 50%;
@@ -219,6 +217,14 @@ export default {
   padding: 5px 10px;
 }
 
+rounded-input {
+  width: 100%;
+}
+
+.rounded-input {
+  width: 90%;
+}
+
 .completed {
   text-decoration: line-through;
   transition: text-decoration 0.3s ease-in-out;
@@ -237,14 +243,17 @@ ul {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 10px;
 }
 
 .todo-content {
   display: flex;
-  align-items: center;
+  width: 100%;
+  flex: 1;
 }
 
-.todo-content label:hover {
-  transform: scale(1.5);
+#label {
+  justify-content: left;
 }
+
 </style>
