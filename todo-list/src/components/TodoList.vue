@@ -1,14 +1,23 @@
 <template>
   <div class="todo-list">
     <h1>Welcome, {{ currentUser ? currentUser.userDetails : 'Guest' }}</h1>
-    <input type="text" v-model="newTodo" @keyup.enter="addTodo" class="rounded-input">
-    <button @click="addTodo" class="rounded-button">Add Todo</button>
+    <div class="todo-item">
+      <div class="todo-content">
+        <input type="text" v-model="newTodo" @keyup.enter="addTodo" class="rounded-input">
+      </div>
+      <button @click="addTodo" class="add-button">+</button>
+    </div>
+    
     <ul>
-      <li v-for="(todo, index) in todos" :key="index" class="rounded-todo">
-        <input type="checkbox" v-model="todo.completed" @change="toggleCompleted(index)">
-        <span v-if="!todo.editing" :class="{ 'completed': todo.completed }">{{ todo.description }}</span>
-        <label>{{ todo.title }}</label>
-        <button @click="removeTodo(index)">Remove</button>
+      <li v-for="(todo, index) in todos" :key="index">
+        <div class="todo-item">
+          <div class="toto-content">
+            <input type="checkbox" v-model="todo.completed" @change="toggleCompleted(index)">
+            <span v-if="!todo.editing" :class="{ 'completed': todo.completed }">{{ todo.description }}</span>
+            <label>{{ todo.title }}</label>
+          </div>
+          <button @click="removeTodo(index)" class="delete-button">X</button>
+        </div>
       </li>
     </ul>
   </div>
@@ -168,6 +177,34 @@ export default {
   border-radius: 10px;
 }
 
+.delete-button {
+  justify-content: center;
+  align-items: center;
+  background-color: red;
+  color: white;
+  text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.add-button {
+  justify-content: center;
+  align-items: center;
+  background-color: green;
+  color: white;
+  text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
 .rounded-input,
 .rounded-button,
 .rounded-todo {
@@ -182,10 +219,6 @@ export default {
   padding: 5px 10px;
 }
 
-.rounded-todo:hover {
-  transform: scale(1.15);
-}
-
 .completed {
   text-decoration: line-through;
   transition: text-decoration 0.3s ease-in-out;
@@ -198,5 +231,20 @@ export default {
 
 ul {
   list-style-type: none;
+}
+
+.todo-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.todo-content {
+  display: flex;
+  align-items: center;
+}
+
+.todo-content label:hover {
+  transform: scale(1.5);
 }
 </style>
