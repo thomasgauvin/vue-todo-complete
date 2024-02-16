@@ -10,9 +10,9 @@
 
     <div class="todo-item" v-for="(todo, index) in todos" :key="index">
       <div class="todo-content">
-        <input type="checkbox" v-model="todo.completed" @change="toggleCompleted(index)">
-        <span v-if="!todo.editing" :class="{ 'completed': todo.completed }">{{ todo.description }}</span>
-        <label>{{ todo.title }}</label>
+        <input type="checkbox" v-model="todo.complete" @change="toggleCompleted(index)">
+        <span v-if="!todo.editing" :class="{ 'completed': todo.complete }">{{ todo.description }}</span>
+        <label>{{ todo.label }}</label>
       </div>
       <button @click="removeTodo(index)" class="delete-button">X</button>
     </div>
